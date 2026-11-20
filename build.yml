@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { name: Windows, os: windows-latest }
+          - { name: macOS, os: macos-latest }
+          - { name: Android64, os: ubuntu-latest, target: Android64 }
+          - { name: Android32, os: ubuntu-latest, target: Android32 }
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # No `sdk:` input on purpose: the action then builds against the SDK version named in
+      # mod.json ("geode": "5.11.2", the last release for GD 2.2081). Don't bump that number
+      # unless you also move to a newer GD.
+      - uses: geode-sdk/build-geode-mod@main
+        id: build
+        with:
+          target: ${{ matrix.config.target }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frame-macro-${{ matrix.config.name }}
+          path: ${{ steps.build.outputs.build-output }}
